@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambridge Reading Adventure - Grade 1</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { Play, Pause, RotateCcw, BookOpen, Star, Award, Calendar, Target, Keyboard, Shuffle, Check, X } = lucide;
+
+        const ReadingApp = () => {
+          const [currentDay, setCurrentDay] = useState(1);
+          const [currentWordIndex, setCurrentWordIndex] = useState(0);
+          const [isPlaying, setIsPlaying] = useState(false);
+          const [completedWords, setCompletedWords] = useState(0);
+          const [currentLevel, setCurrentLevel] = useState(1);
+          const [showCelebration, setShowCelebration] = useState(false);
+          const [dailyProgress, setDailyProgress] = useState(0);
+          const [activeTab, setActiveTab] = useState('reading'); // reading, matching, typing
+          const [typingInput, setTypingInput] = useState('');
+          const [matchingPairs, setMatchingPairs] = useState([]);
+          const [selectedCards, setSelectedCards] = useState([]);
+          const [matchedPairs, setMatchedPairs] = useState([]);
+          const [gameScore, setGameScore] = useState(0);
+
+          // Cambridge Primary English word scope for Grade 1 (365 days) with seasonal themes
+          const cambridgeWordScope = {
+            // Days 1-50: Basic CVC words and sight words
+            basic: ['cat', 'dog', 'sun', 'run', 'fun', 'big', 'red', 'hat', 'bat', 'sit', 'pot', 'top', 'hop', 'map', 'tap', 'can', 'man', 'van', 'bag', 'tag', 'leg', 'egg', 'bed', 'pen', 'ten', 'net', 'wet', 'get', 'let', 'hit', 'fit', 'pit', 'lot', 'hot', 'got', 'cut', 'but', 'nut', 'hut', 'mud', 'bud', 'cup', 'pup', 'bus', 'yes', 'zip', 'dip', 'lip', 'rip', 'tip'],
+            
+            // Days 51-100: Sight words and simple compound words
+            sight: ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'end', 'let', 'man', 'new', 'now', 'old', 'put', 'say', 'she', 'too', 'use', 'way', 'why', 'ask', 'big', 'try', 'own', 'eat', 'far'],
+            
+            // Days 101-150: Simple 4-letter words
+            simple: ['jump', 'help', 'love', 'play', 'book', 'look', 'good', 'come', 'went', 'make', 'take', 'like', 'time', 'work', 'call', 'back', 'down', 'find', 'give', 'hand', 'here', 'just', 'keep', 'kind', 'know', 'last', 'left', 'life', 'line', 'live', 'long', 'made', 'many', 'most', 'move', 'must', 'name', 'need', 'open', 'over', 'part', 'place', 'read', 'right', 'said', 'same', 'tell', 'turn', 'walk', 'well'],
+            
+            // Days 151-200: 5-letter words and common adjectives
+            medium: ['happy', 'water', 'house', 'green', 'white', 'where', 'think', 'after', 'again', 'round', 'world', 'black', 'bring', 'build', 'carry', 'clean', 'close', 'could', 'doing', 'don\'t', 'every', 'first', 'found', 'great', 'group', 'heard', 'large', 'learn', 'light', 'might', 'never', 'night', 'other', 'plant', 'point', 'right', 'shall', 'show', 'small', 'sound', 'start', 'still', 'study', 'their', 'there', 'these', 'thing', 'three', 'under', 'while'],
+            
+            // Days 201-250: 6-letter words and complex concepts
+            complex: ['school', 'friend', 'family', 'animal', 'people', 'little', 'around', 'mother', 'father', 'before', 'always', 'answer', 'appear', 'around', 'became', 'become', 'before', 'began', 'behind', 'beside', 'better', 'between', 'bright', 'change', 'choose', 'create', 'differ', 'during', 'easily', 'enough', 'escape', 'except', 'follow', 'forget', 'happen', 'island', 'listen', 'matter', 'middle', 'minute', 'moment', 'morning', 'number', 'object', 'orange', 'parent', 'picture', 'please', 'present', 'question'],
+            
+            // Days 251-300: Advanced vocabulary
+            advanced: ['because', 'through', 'picture', 'without', 'morning', 'stories', 'country', 'nothing', 'thought', 'another', 'anything', 'complete', 'continue', 'describe', 'different', 'everyone', 'exciting', 'experience', 'explore', 'important', 'interest', 'language', 'material', 'natural', 'observe', 'opposite', 'popular', 'position', 'possible', 'problem', 'process', 'protect', 'question', 'realize', 'remember', 'separate', 'serious', 'several', 'similar', 'society', 'special', 'station', 'strange', 'student', 'subject', 'suddenly', 'support', 'surface', 'system', 'teacher'],
+            
+            // Days 301-365: Challenge words and academic vocabulary
+            challenge: ['children', 'remember', 'different', 'something', 'together', 'important', 'beautiful', 'wonderful', 'sometimes', 'everything', 'adventure', 'celebrate', 'character', 'classroom', 'community', 'discovery', 'encourage', 'environment', 'equipment', 'excellent', 'fantastic', 'favourite', 'friendship', 'happiness', 'information', 'interesting', 'investigate', 'knowledge', 'literature', 'mysterious', 'necessary', 'opportunity', 'paragraph', 'pollution', 'population', 'president', 'principal', 'pronunciation', 'qualities', 'restaurant', 'scientist', 'secretary', 'sentence', 'situation', 'struggle', 'temperature', 'tradition', 'university', 'vacation', 'vocabulary', 'yesterday', 'yourself', 'agreement', 'attention', 'beginning', 'breakfast', 'butterfly', 'carpenter', 'chocolate', 'Christmas', 'dangerous', 'dictionary', 'elephant', 'envelope', 'everything', 'exercise']
+          };
+
+          // Seasonal themed words for each month
+          const seasonalThemes = {
+            1: { // January - New Year 🎊
+              emoji: '🎊',
+              theme: 'New Year',
+              words: ['new', 'year', 'start', 'begin', 'fresh', 'goals', 'hope', 'wish', 'change', 'party', 'count', 'time', 'clock', 'first', 'happy', 'cheer', 'joy', 'fun', 'dance', 'sing', 'snow', 'cold', 'ice', 'winter', 'warm', 'coat', 'hat', 'scarf', 'mittens', 'boots']
+            },
+            2: { // February - Valentine's Day 💝
+              emoji: '💝',
+              theme: 'Valentine\'s Day',
+              words: ['love', 'heart', 'hug', 'kiss', 'care', 'kind', 'sweet', 'nice', 'friend', 'family', 'mom', 'dad', 'pink', 'red', 'rose', 'flower', 'gift', 'card', 'candy', 'chocolate', 'smile', 'happy', 'warm', 'cozy', 'together', 'share', 'give', 'help', 'cuddle', 'snuggle']
+            },
+            3: { // March - Spring 🌸
+              emoji: '🌸',
+              theme: 'Spring',
+              words: ['spring', 'bloom', 'flower', 'tree', 'leaf', 'green', 'grow', 'plant', 'seed', 'garden', 'rain', 'sun', 'warm', 'bird', 'nest', 'egg', 'baby', 'chirp', 'sing', 'fly', 'grass', 'mud', 'puddle', 'splash', 'fresh', 'clean', 'nature', 'outside', 'play', 'run']
+            },
+            4: { // April - Easter 🐰
+              emoji: '🐰',
+              theme: 'Easter',
+              words: ['bunny', 'rabbit', 'egg', 'hunt', 'find', 'hide', 'basket', 'chick', 'yellow', 'fluffy', 'hop', 'jump', 'carrot', 'eat', 'nibble', 'soft', 'furry', 'cute', 'baby', 'nest', 'spring', 'flower', 'tulip', 'lily', 'bloom', 'garden', 'colorful', 'bright', 'happy', 'family']
+            },
+            5: { // May - Mother's Day 🌷
+              emoji: '🌷',
+              theme: 'Mother\'s Day',
+              words: ['mother', 'mom', 'mama', 'love', 'hug', 'kiss', 'care', 'kind', 'sweet', 'gentle', 'warm', 'safe', 'help', 'cook', 'read', 'sing', 'play', 'flower', 'gift', 'card', 'thank', 'special', 'best', 'wonderful', 'beautiful', 'smile', 'happy', 'family', 'together', 'cuddle']
+            },
+            6: { // June - Father's Day/Summer ☀️
+              emoji: '☀️',
+              theme: 'Father\'s Day/Summer',
+              words: ['father', 'dad', 'papa', 'strong', 'brave', 'fun', 'play', 'teach', 'help', 'fix', 'build', 'work', 'hug', 'love', 'summer', 'sun', 'hot', 'warm', 'beach', 'swim', 'water', 'sand', 'shell', 'wave', 'fish', 'boat', 'vacation', 'trip', 'camp', 'outside']
+            },
+            7: { // July - Independence Day 🇺🇸
+              emoji: '🇺🇸',
+              theme: 'Independence Day',
+              words: ['flag', 'red', 'white', 'blue', 'star', 'stripe', 'freedom', 'country', 'America', 'parade', 'march', 'band', 'music', 'drum', 'horn', 'fireworks', 'boom', 'sparkle', 'bright', 'celebration', 'party', 'picnic', 'grill', 'hotdog', 'burger', 'family', 'friends', 'together', 'proud', 'happy']
+            },
+            8: { // August - Summer Vacation 🏖️
+              emoji: '🏖️',
+              theme: 'Summer Vacation',
+              words: ['vacation', 'beach', 'sand', 'ocean', 'wave', 'swim', 'splash', 'float', 'dive', 'shell', 'crab', 'fish', 'boat', 'sail', 'island', 'palm', 'coconut', 'sun', 'tan', 'hot', 'cool', 'ice', 'drink', 'relax', 'rest', 'play', 'fun', 'adventure', 'explore', 'memory']
+            },
+            9: { // September - Back to School 📚
+              emoji: '📚',
+              theme: 'Back to School',
+              words: ['school', 'learn', 'study', 'read', 'write', 'book', 'pencil', 'paper', 'desk', 'chair', 'teacher', 'student', 'class', 'friend', 'play', 'recess', 'lunch', 'backpack', 'homework', 'test', 'smart', 'think', 'know', 'understand', 'practice', 'try', 'work', 'help', 'share', 'grow']
+            },
+            10: { // October - Halloween 🎃
+              emoji: '🎃',
+              theme: 'Halloween',
+              words: ['pumpkin', 'ghost', 'witch', 'bat', 'cat', 'spider', 'web', 'scary', 'spooky', 'boo', 'trick', 'treat', 'candy', 'costume', 'mask', 'dress', 'orange', 'black', 'night', 'dark', 'moon', 'star', 'haunted', 'house', 'door', 'knock', 'fun', 'party', 'friends', 'laugh']
+            },
+            11: { // November - Thanksgiving 🦃
+              emoji: '🦃',
+              theme: 'Thanksgiving',
+              words: ['turkey', 'thanks', 'grateful', 'family', 'feast', 'dinner', 'food', 'eat', 'cook', 'bake', 'pie', 'corn', 'potato', 'gravy', 'bread', 'butter', 'cranberry', 'sauce', 'together', 'share', 'thankful', 'blessing', 'harvest', 'autumn', 'fall', 'leaf', 'orange', 'brown', 'yellow', 'warm']
+            },
+            12: { // December - Christmas 🎄
+              emoji: '🎄',
+              theme: 'Christmas',
+              words: ['Christmas', 'tree', 'Santa', 'gift', 'present', 'wrap', 'bow', 'ribbon', 'star', 'angel', 'bell', 'ring', 'song', 'carol', 'joy', 'peace', 'love', 'family', 'friends', 'together', 'share', 'give', 'receive', 'cookie', 'milk', 'reindeer', 'sleigh', 'snow', 'cold', 'winter']
+            }
+          };
+
+          // Generate daily word set based on Cambridge scope with seasonal themes
+          const generateDailyWords = (day) => {
+            const wordsPerDay = 70;
+            let wordPool = [];
+            
+            // Get current month based on day (assuming Jan 1 = day 1)
+            const currentMonth = Math.ceil(day / 30.42); // Average days per month
+            const monthIndex = Math.min(12, Math.max(1, currentMonth));
+            
+            // Get seasonal themed words for current month
+            const seasonalWords = seasonalThemes[monthIndex]?.words || [];
+            
+            // Progressive difficulty based on day
+            if (day <= 50) {
+              wordPool = [...cambridgeWordScope.basic];
+            } else if (day <= 100) {
+              wordPool = [...cambridgeWordScope.basic, ...cambridgeWordScope.sight];
+            } else if (day <= 150) {
+              wordPool = [...cambridgeWordScope.sight, ...cambridgeWordScope.simple];
+            } else if (day <= 200) {
+              wordPool = [...cambridgeWordScope.simple, ...cambridgeWordScope.medium];
+            } else if (day <= 250) {
+              wordPool = [...cambridgeWordScope.medium, ...cambridgeWordScope.complex];
+            } else if (day <= 300) {
+              wordPool = [...cambridgeWordScope.complex, ...cambridgeWordScope.advanced];
+            } else {
+              wordPool = [...cambridgeWordScope.advanced, ...cambridgeWordScope.challenge];
+            }
+            
+            // Blend seasonal words with curriculum words (30% seasonal, 70% curriculum)
+            const seasonalCount = Math.floor(wordsPerDay * 0.3); // 21 seasonal words
+            const curriculumCount = wordsPerDay - seasonalCount; // 49 curriculum words
+            
+            // Filter seasonal words to match difficulty level
+            const levelAppropriateSeasonalWords = seasonalWords.filter(word => {
+              const level = getWordLevel(word);
+              if (day <= 50) return level <= 2;
+              if (day <= 100) return level <= 3;
+              if (day <= 150) return level <= 4;
+              if (day <= 200) return level <= 5;
+              if (day <= 250) return level <= 6;
+              return true;
+            });
+            
+            // Combine seasonal and curriculum words
+            const shuffledSeasonal = levelAppropriateSeasonalWords.sort(() => Math.random() - 0.5);
+            const shuffledCurriculum = wordPool.sort(() => Math.random() - 0.5);
+            
+            const selectedWords = [
+              ...shuffledSeasonal.slice(0, Math.min(seasonalCount, shuffledSeasonal.length)),
+              ...shuffledCurriculum.slice(0, curriculumCount)
+            ];
+            
+            // Fill remaining slots if needed
+            while (selectedWords.length < wordsPerDay) {
+              const remainingWords = wordPool.filter(word => !selectedWords.includes(word));
+              if (remainingWords.length > 0) {
+                selectedWords.push(remainingWords[Math.floor(Math.random() * remainingWords.length)]);
+              } else {
+                break;
+              }
+            }
+            
+            // Shuffle final selection and create word objects
+            const finalWords = selectedWords.sort(() => Math.random() - 0.5);
+            return finalWords.slice(0, wordsPerDay).map((word, index) => ({
+              word,
+              level: getWordLevel(word),
+              completed: false,
+              id: index,
+              isSeasonal: levelAppropriateSeasonalWords.includes(word)
+            }));
+          };
+
+          // Get current month theme
+          const getCurrentMonthTheme = (day) => {
+            const currentMonth = Math.ceil(day / 30.42);
+            const monthIndex = Math.min(12, Math.max(1, currentMonth));
+            return seasonalThemes[monthIndex];
+          };
+
+          const getWordLevel = (word) => {
+            if (word.length <= 3) return 1;
+            if (word.length <= 4) return 2;
+            if (word.length <= 5) return 3;
+            if (word.length <= 6) return 4;
+            if (word.length <= 7) return 5;
+            if (word.length <= 8) return 6;
+            return 7;
+          };
+
+          const [dailyWords, setDailyWords] = useState([]);
+
+          useEffect(() => {
+            setDailyWords(generateDailyWords(currentDay));
+            setCurrentWordIndex(0);
+            setCompletedWords(0);
+            setDailyProgress(0);
+            setCurrentLevel(1);
+            generateMatchingGame();
+          }, [currentDay]);
+
+          const currentWord = dailyWords[currentWordIndex];
+
+          const speakWord = (word) => {
+            if ('speechSynthesis' in window) {
+              const utterance = new SpeechSynthesisUtterance(word);
+              utterance.rate = 0.6;
+              utterance.pitch = 1.2;
+              utterance.volume = 0.9;
+              
+              const voices = speechSynthesis.getVoices();
+              const preferredVoice = voices.find(voice => 
+                voice.name.includes('Google') || 
+                voice.name.includes('Microsoft') ||
+                voice.name.includes('Samantha') ||
+                voice.name.includes('Karen') ||
+                voice.name.includes('Fiona') ||
+                voice.lang.includes('en-US')
+              );
+              
+              if (preferredVoice) {
+                utterance.voice = preferredVoice;
+              }
+
+              speechSynthesis.speak(utterance);
+            }
+          };
+
+          const handlePlayPause = () => {
+            if (currentWord) {
+              setIsPlaying(!isPlaying);
+              if (!isPlaying) {
+                speakWord(currentWord.word);
+              } else {
+                speechSynthesis.cancel();
+              }
+            }
+          };
+
+          const handleNextWord = () => {
+            if (currentWordIndex < dailyWords.length - 1) {
+              const updatedWords = [...dailyWords];
+              updatedWords[currentWordIndex].completed = true;
+              setDailyWords(updatedWords);
+              
+              setCurrentWordIndex(currentWordIndex + 1);
+              setCompletedWords(completedWords + 1);
+              setDailyProgress(((completedWords + 1) / 70) * 100);
+              
+              if ((completedWords + 1) % 10 === 0 && currentLevel < 7) {
+                setCurrentLevel(currentLevel + 1);
+                setShowCelebration(true);
+                setTimeout(() => setShowCelebration(false), 2000);
+              }
+            }
+            
+            setIsPlaying(false);
+            speechSynthesis.cancel();
+          };
+
+          const handlePrevWord = () => {
+            if (currentWordIndex > 0) {
+              setCurrentWordIndex(currentWordIndex - 1);
+              setIsPlaying(false);
+              speechSynthesis.cancel();
+            }
+          };
+
+          // Matching Game Logic
+          const generateMatchingGame = () => {
+            if (dailyWords.length === 0) return;
+            
+            const gameWords = dailyWords.slice(0, 8);
+            const pairs = [];
+            
+            gameWords.forEach((wordObj, index) => {
+              pairs.push({ id: index * 2, content: wordObj.word, type: 'word', matched: false });
+              pairs.push({ id: index * 2 + 1, content: wordObj.word, type: 'audio', matched: false });
+            });
+            
+            setMatchingPairs(pairs.sort(() => Math.random() - 0.5));
+            setMatchedPairs([]);
+            setSelectedCards([]);
+            setGameScore(0);
+          };
+
+          const handleCardClick = (card) => {
+            if (selectedCards.length < 2 && !selectedCards.find(c => c.id === card.id) && !card.matched) {
+              const newSelected = [...selectedCards, card];
+              setSelectedCards(newSelected);
+              
+              if (card.type === 'audio') {
+                speakWord(card.content);
+              }
+              
+              if (newSelected.length === 2) {
+                setTimeout(() => {
+                  if (newSelected[0].content === newSelected[1].content && newSelected[0].type !== newSelected[1].type) {
+                    const newMatched = [...matchedPairs, ...newSelected];
+                    setMatchedPairs(newMatched);
+                    setGameScore(gameScore + 10);
+                    
+                    const updatedPairs = matchingPairs.map(p => 
+                      newSelected.find(s => s.id === p.id) ? { ...p, matched: true } : p
+                    );
+                    setMatchingPairs(updatedPairs);
+                  }
+                  setSelectedCards([]);
+                }, 1000);
+              }
+            }
+          };
+
+          // Typing Exercise Logic
+          const handleTypingSubmit = () => {
+            if (currentWord && typingInput.toLowerCase() === currentWord.word.toLowerCase()) {
+              setGameScore(gameScore + 5);
+              handleNextWord();
+              setTypingInput('');
+            }
+          };
+
+          const handleTypingKeyPress = (e) => {
+            if (e.key === 'Enter') {
+              handleTypingSubmit();
+            }
+          };
+
+          const getLevelColor = (level) => {
+            const colors = {
+              1: 'bg-green-500',
+              2: 'bg-blue-500',
+              3: 'bg-purple-500',
+              4: 'bg-orange-500',
+              5: 'bg-red-500',
+              6: 'bg-pink-500',
+              7: 'bg-indigo-500'
+            };
+            return colors[level] || 'bg-gray-500';
+          };
+
+          const getDifficultyLabel = (level) => {
+            const labels = {
+              1: 'Beginner',
+              2: 'Easy',
+              3: 'Getting Better',
+              4: 'Good',
+              5: 'Great',
+              6: 'Excellent',
+              7: 'Expert'
+            };
+            return labels[level] || 'Unknown';
+          };
+
+          const renderReadingTab = () => (
+            React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-8" },
+              currentWord ? 
+                React.createElement('div', { className: "text-center" },
+                  React.createElement('div', { className: "mb-6" },
+                    React.createElement('div', { className: "text-sm text-gray-500 mb-2" },
+                      `Day ${currentDay} • Word ${currentWordIndex + 1} of 70`
+                    ),
+                    React.createElement('div', { className: "text-8xl font-bold text-gray-800 mb-4 tracking-wide" },
+                      currentWord.word
+                    ),
+                    React.createElement('div', { className: "flex items-center justify-center space-x-4 mb-4" },
+                      React.createElement('div', { 
+                        className: `inline-block px-3 py-1 rounded-full text-sm font-semibold text-white ${getLevelColor(currentWord.level)}` 
+                      },
+                        `${currentWord.word.length} letters • Level ${currentWord.level}`
+                      ),
+                      currentWord.isSeasonal &&
+                        React.createElement('div', { className: "inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white" },
+                          React.createElement('span', { className: "mr-1" }, getCurrentMonthTheme(currentDay)?.emoji),
+                          getCurrentMonthTheme(currentDay)?.theme
+                        )
+                    )
+                  ),
+
+                  React.createElement('div', { className: "flex justify-center space-x-4 mb-6" },
+                    React.createElement('button', {
+                      onClick: handlePrevWord,
+                      disabled: currentWordIndex === 0,
+                      className: "px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                    }, "Previous"),
+                    
+                    React.createElement('button', {
+                      onClick: handlePlayPause,
+                      className: "px-8 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center"
+                    },
+                      React.createElement(isPlaying ? Pause : Play, { className: "w-5 h-5 mr-2" }),
+                      isPlaying ? 'Stop' : 'Listen'
+                    ),
+                    
+                    React.createElement('button', {
+                      onClick: handleNextWord,
+                      disabled: currentWordIndex === dailyWords.length - 1,
+                      className: "px-6 py-3 bg-green-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 transition-colors"
+                    }, "Next")
+                  ),
+
+                  React.createElement('div', { className: "text-gray-600 text-lg" },
+                    React.createElement('p', { className: "mb-2" }, "👂 Listen carefully to the word"),
+                    React.createElement('p', { className: "mb-2" }, "👀 Look at how it's spelled"),
+                    React.createElement('p', { className: "mb-2" }, "📚 Try to remember it for next time!"),
+                    currentWord.isSeasonal &&
+                      React.createElement('p', { className: "text-purple-600 font-semibold" },
+                        React.createElement('span', { className: "mr-1" }, getCurrentMonthTheme(currentDay)?.emoji),
+                        `Special ${getCurrentMonthTheme(currentDay)?.theme} word!`
+                      )
+                  )
+                ) :
+                React.createElement('div', { className: "text-center" },
+                  React.createElement('div', { className: "text-6xl mb-4" }, "🎉"),
+                  React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-4" }, `Day ${currentDay} Complete!`),
+                  React.createElement('p', { className: "text-lg text-gray-600 mb-6" }, "You've completed all 70 words for today!"),
+                  React.createElement('button', {
+                    onClick: () => setCurrentDay(currentDay + 1),
+                    disabled: currentDay >= 365,
+                    className: "px-8 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  }, "Next Day")
+                )
+            )
+          );
+
+          const renderMatchingGame = () => (
+            React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-8" },
+              React.createElement('div', { className: "text-center mb-6" },
+                React.createElement('h3', { className: "text-2xl font-bold text-gray-800 mb-2" }, "Matching Game"),
+                React.createElement('p', { className: "text-gray-600" }, "Match the word with its sound!"),
+                React.createElement('div', { className: "text-lg font-semibold text-blue-600 mt-2" }, `Score: ${gameScore}`)
+              ),
+              
+              React.createElement('div', { className: "grid grid-cols-4 gap-4 max-w-2xl mx-auto" },
+                matchingPairs.map((card) =>
+                  React.createElement('div', {
+                    key: card.id,
+                    onClick: () => handleCardClick(card),
+                    className: `h-24 rounded-lg border-2 cursor-pointer transition-all duration-200 flex items-center justify-center text-center p-2 ${
+                      card.matched 
+                        ? 'bg-green-100 border-green-500' 
+                        : selectedCards.find(c => c.id === card.id)
+                        ? 'bg-blue-100 border-blue-500'
+                        : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                    }`
+                  },
+                    card.type === 'word' ? 
+                      React.createElement('span', { className: "font-bold text-lg" }, card.content) :
+                      React.createElement('div', { className: "text-center" },
+                        React.createElement(Play, { className: "w-8 h-8 mx-auto mb-1 text-blue-500" }),
+                        React.createElement('span', { className: "text-xs text-gray-600" }, "Listen")
+                      )
+                  )
+                )
+              ),
+              
+              React.createElement('div', { className: "text-center mt-6" },
+                React.createElement('button', {
+                  onClick: generateMatchingGame,
+                  className: "px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transition-colors flex items-center mx-auto"
+                },
+                  React.createElement(Shuffle, { className: "w-5 h-5 mr-2" }),
+                  "New Game"
+                )
+              )
+            )
+          );
+
+          const renderTypingExercise = () => (
+            React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-8" },
+              React.createElement('div', { className: "text-center mb-6" },
+                React.createElement('h3', { className: "text-2xl font-bold text-gray-800 mb-2" }, "Typing Exercise"),
+                React.createElement('p', { className: "text-gray-600" }, "Listen and type the word you hear!"),
+                React.createElement('div', { className: "text-lg font-semibold text-blue-600 mt-2" }, `Score: ${gameScore}`)
+              ),
+              
+              currentWord &&
+                React.createElement('div', { className: "max-w-md mx-auto" },
+                  React.createElement('div', { className: "text-center mb-6" },
+                    React.createElement('button', {
+                      onClick: () => speakWord(currentWord.word),
+                      className: "px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center mx-auto text-lg"
+                    },
+                      React.createElement(Play, { className: "w-6 h-6 mr-2" }),
+                      "Play Word"
+                    )
+                  ),
+                  
+                  React.createElement('div', { className: "mb-6" },
+                    React.createElement('input', {
+                      type: "text",
+                      value: typingInput,
+                      onChange: (e) => setTypingInput(e.target.value),
+                      onKeyPress: handleTypingKeyPress,
+                      placeholder: "Type what you hear...",
+                      className: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-lg text-center font-semibold focus:border-blue-500 focus:outline-none"
+                    })
+                  ),
+                  
+                  React.createElement('div', { className: "flex justify-center space-x-4" },
+                    React.createElement('button', {
+                      onClick: handleTypingSubmit,
+                      className: "px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center"
+                    },
+                      React.createElement(Check, { className: "w-5 h-5 mr-2" }),
+                      "Submit"
+                    ),
+                    React.createElement('button', {
+                      onClick: () => setTypingInput(''),
+                      className: "px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors flex items-center"
+                    },
+                      React.createElement(X, { className: "w-5 h-5 mr-2" }),
+                      "Clear"
+                    )
+                  ),
+                  
+                  React.createElement('div', { className: "mt-6 text-center" },
+                    React.createElement('div', { className: "text-sm text-gray-500 mb-2" }, `Hint: ${currentWord.word.length} letters`),
+                    React.createElement('div', { 
+                      className: `inline-block px-3 py-1 rounded-full text-sm font-semibold text-white ${getLevelColor(currentWord.level)}` 
+                    },
+                      `Level ${currentWord.level}`
+                    )
+                  )
+                )
+            )
+          );
+
+          return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 p-4" },
+            React.createElement('div', { className: "max-w-4xl mx-auto" },
+              // Header
+              React.createElement('div', { className: "text-center mb-8" },
+                React.createElement('div', { className: "flex items-center justify-center mb-4" },
+                  React.createElement(BookOpen, { className: "w-12 h-12 text-blue-600 mr-3" }),
+                  React.createElement('h1', { className: "text-4xl font-bold text-gray-800" }, "Cambridge Reading Adventure")
+                ),
+                React.createElement('p', { className: "text-lg text-gray-600" }, "Grade 1 • 365 Days • 70 Words Daily"),
+                
+                // Monthly Theme Display
+                React.createElement('div', { className: "mt-4 inline-block bg-white rounded-full px-6 py-3 shadow-lg" },
+                  React.createElement('div', { className: "flex items-center justify-center" },
+                    React.createElement('span', { className: "text-3xl mr-3" }, getCurrentMonthTheme(currentDay)?.emoji),
+                    React.createElement('span', { className: "text-lg font-semibold text-gray-700" },
+                      `${getCurrentMonthTheme(currentDay)?.theme} Theme`
+                    )
+                  )
+                )
+              ),
+
+              // Day Selector
+              React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-6 mb-8" },
+                React.createElement('div', { className: "flex items-center justify-between mb-4" },
+                  React.createElement('div', { className: "flex items-center" },
+                    React.createElement(Calendar, { className: "w-6 h-6 text-blue-500 mr-2" }),
+                    React.createElement('span', { className: "text-lg font-semibold text-gray-700" }, `Day ${currentDay} of 365`)
+                  ),
+                  React.createElement('div', { className: "flex space-x-2" },
+                    React.createElement('button', {
+                      onClick: () => setCurrentDay(Math.max(1, currentDay - 1)),
+                      disabled: currentDay === 1,
+                      className: "px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                    }, "Previous Day"),
+                    React.createElement('button', {
+                      onClick: () => setCurrentDay(Math.min(365, currentDay + 1)),
+                      disabled: currentDay === 365,
+                      className: "px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                    }, "Next Day")
+                  )
+                ),
+                
+                React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-3" },
+                  React.createElement('div', { 
+                    className: "bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300",
+                    style: { width: `${(currentDay / 365) * 100}%` }
+                  })
+                )
+              ),
+
+              // Progress Bar
+              React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-6 mb-8" },
+                React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                  React.createElement('div', { className: "flex items-center" },
+                    React.createElement(Star, { className: "w-6 h-6 text-yellow-500 mr-2" }),
+                    React.createElement('span', { className: "text-lg font-semibold text-gray-700" },
+                      `Daily Progress: ${Math.round(dailyProgress)}%`
+                    )
+                  ),
+                  React.createElement('div', { className: "text-right" },
+                    React.createElement('div', { className: "text-sm text-gray-500" }, "Words Completed"),
+                    React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, `${completedWords}/70`)
+                  )
+                ),
+                
+                React.createElement('div', { className: "w-full bg-gray-200 rounded-full h-4 mb-4" },
+                  React.createElement('div', { 
+                    className: "bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-300",
+                    style: { width: `${dailyProgress}%` }
+                  })
+                ),
+
+                React.createElement('div', { className: "flex items-center justify-center" },
+                  React.createElement('div', { 
+                    className: `${getLevelColor(currentLevel)} text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center` 
+                  },
+                    React.createElement(Award, { className: "w-4 h-4 mr-1" }),
+                    `Level ${currentLevel}: ${getDifficultyLabel(currentLevel)}`
+                  )
+                )
+              ),
+
+              // Activity Tabs
+              React.createElement('div', { className: "bg-white rounded-xl shadow-lg mb-8" },
+                React.createElement('div', { className: "flex border-b" },
+                  React.createElement('button', {
+                    onClick: () => setActiveTab('reading'),
+                    className: `flex-1 py-4 px-6 font-semibold transition-colors flex items-center justify-center ${
+                      activeTab === 'reading' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`
+                  },
+                    React.createElement(BookOpen, { className: "w-5 h-5 mr-2" }),
+                    "Reading"
+                  ),
+                  React.createElement('button', {
+                    onClick: () => setActiveTab('matching'),
+                    className: `flex-1 py-4 px-6 font-semibold transition-colors flex items-center justify-center ${
+                      activeTab === 'matching' 
+                        ? 'bg-purple-500 text-white' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`
+                  },
+                    React.createElement(Target, { className: "w-5 h-5 mr-2" }),
+                    "Matching Game"
+                  ),
+                  React.createElement('button', {
+                    onClick: () => setActiveTab('typing'),
+                    className: `flex-1 py-4 px-6 font-semibold transition-colors flex items-center justify-center ${
+                      activeTab === 'typing' 
+                        ? 'bg-green-500 text-white' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`
+                  },
+                    React.createElement(Keyboard, { className: "w-5 h-5 mr-2" }),
+                    "Typing Exercise"
+                  )
+                )
+              ),
+
+              // Active Tab Content
+              activeTab === 'reading' && renderReadingTab(),
+              activeTab === 'matching' && renderMatchingGame(),
+              activeTab === 'typing' && renderTypingExercise(),
+
+              // Celebration Modal
+              showCelebration &&
+                React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" },
+                  React.createElement('div', { className: "bg-white rounded-xl p-8 text-center animate-pulse" },
+                    React.createElement('div', { className: "text-6xl mb-4" }, "🌟"),
+                    React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-2" }, "Level Up!"),
+                    React.createElement('p', { className: "text-lg text-gray-600" }, `You've reached Level ${currentLevel}!`),
+                    React.createElement('p', { className: "text-sm text-gray-500 mt-2" }, getDifficultyLabel(currentLevel) + " Reader")
+                  )
+                )
+            )
+          );
+        };
+
+        // Render the app
+        ReactDOM.render(React.createElement(ReadingApp), document.getElementById('root'));
+    </script>
+</body>
+</html>
