@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 1 Reading Adventure - 365 Days</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        .animate-scale-up {
+            animation: scaleUp 0.2s ease-out;
+        }
+        .animate-wiggle {
+            animation: wiggle 0.5s ease-in-out;
+        }
+        .animate-rainbow {
+            animation: rainbow 3s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+            50% { transform: none; animation-timing-function: cubic-bezier(0,0,0.2,1); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); }
+            to { transform: scale(1); }
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        @keyframes rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        
+        .word-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .word-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .phonics-bubble {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin: 2px;
+            animation: pop 0.3s ease-out;
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .achievement-popup {
+            animation: achievementSlide 3s ease-in-out;
+        }
+        
+        @keyframes achievementSlide {
+            0% { transform: translateX(100%); }
+            15%, 85% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #ff6b6b;
+            animation: confetti-fall 3s linear infinite;
+            z-index: 1000;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .word-highlight {
+            background: linear-gradient(45deg, #ffeaa7, #fab1a0);
+            border-radius: 8px;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+        const { Play, Pause, BookOpen, Star, Award, Calendar, Target, Keyboard, Shuffle, Check, X, Volume2, Trophy, Gift, Lightbulb, Eye, Ear, Heart, Zap, Brain, Sparkles, RotateCcw, Home, Settings } = lucide;
+
+        const Grade1ReadingApp = () => {
+            const [currentDay, setCurrentDay] = useState(1);
+            const [currentWordIndex, setCurrentWordIndex] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [completedWords, setCompletedWords] = useState(0);
+            const [currentLevel, setCurrentLevel] = useState(1);
+            const [showCelebration, setShowCelebration] = useState(false);
+            const [dailyProgress, setDailyProgress] = useState(0);
+            const [activeTab, setActiveTab] = useState('reading');
+            const [typingInput, setTypingInput] = useState('');
+            const [matchingPairs, setMatchingPairs] = useState([]);
+            const [selectedCards, setSelectedCards] = useState([]);
+            const [matchedPairs, setMatchedPairs] = useState([]);
+            const [gameScore, setGameScore] = useState(0);
+            const [achievements, setAchievements] = useState([]);
+            const [showAchievement, setShowAchievement] = useState(null);
+            const [totalWordsLearned, setTotalWordsLearned] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [showDefinition, setShowDefinition] = useState(true);
+            const [showPhonics, setShowPhonics] = useState(true);
+            const [autoPlay, setAutoPlay] = useState(false);
+            const [speechRate, setSpeechRate] = useState(0.8);
+            const [showConfetti, setShowConfetti] = useState(false);
+            const [dailyWordsCompleted, setDailyWordsCompleted] = useState(new Set());
+            const [favoriteWords, setFavoriteWords] = useState(new Set());
+            const [masteredWords, setMasteredWords] = useState(new Set());
+            const [weeklyProgress, setWeeklyProgress] = useState([]);
+            
+            const confettiRef = useRef();
+
+            // Comprehensive Grade 1 vocabulary database (25,550 total words for 365 days × 70 words)
+            const vocabularyDatabase = {
+                // Weeks 1-4: Basic CVC and sight words (Days 1-28)
+                week1_4: [
+                    // CVC Words
+                    { word: 'cat', definition: 'A furry pet that says meow', phonics: ['c', 'a', 't'], example: 'The cat sleeps on my bed.', category: 'animals' },
+                    { word: 'dog', definition: 'A friendly pet that barks', phonics: ['d', 'o', 'g'], example: 'My dog loves to play fetch.', category: 'animals' },
+                    { word: 'sun', definition: 'The bright star in our sky', phonics: ['s', 'u', 'n'], example: 'The sun gives us light.', category: 'nature' },
+                    { word: 'run', definition: 'To move very fast', phonics: ['r', 'u', 'n'], example: 'I like to run in the park.', category: 'actions' },
+                    { word: 'fun', definition: 'Something that makes you happy', phonics: ['f', 'u', 'n'], example: 'Playing games is fun.', category: 'feelings' },
+                    { word: 'big', definition: 'Very large in size', phonics: ['b', 'i', 'g'], example: 'An elephant is big.', category: 'describing' },
+                    { word: 'red', definition: 'A bright color like fire', phonics: ['r', 'e', 'd'], example: 'The apple is red.', category: 'colors' },
+                    { word: 'hat', definition: 'Something you wear on your head', phonics: ['h', 'a', 't'], example: 'I wear a hat in the sun.', category: 'clothes' },
+                    { word: 'bat', definition: 'An animal that flies at night', phonics: ['b', 'a', 't'], example: 'A bat hangs upside down.', category: 'animals' },
+                    { word: 'sit', definition: 'To rest on a chair', phonics: ['s', 'i', 't'], example: 'Please sit down here.', category: 'actions' },
+                    { word: 'pot', definition: 'A container for cooking', phonics: ['p', 'o', 't'], example: 'Mom cooks soup in a pot.', category: 'objects' },
+                    { word: 'top', definition: 'The highest part', phonics: ['t', 'o', 'p'], example: 'The bird sits on top of the tree.', category: 'positions' },
+                    { word: 'hop', definition: 'To jump on one foot', phonics: ['h', 'o', 'p'], example: 'Rabbits hop in the grass.', category: 'actions' },
+                    { word: 'map', definition: 'A picture that shows places', phonics: ['m', 'a', 'p'], example: 'Use the map to find your way.', category: 'objects' },
+                    { word: 'tap', definition: 'To hit something gently', phonics: ['t', 'a', 'p'], example: 'Tap the drum with your fingers.', category: 'actions' },
+                    { word: 'can', definition: 'A metal container', phonics: ['c', 'a', 'n'], example: 'Open the can of beans.', category: 'objects' },
+                    { word: 'man', definition: 'An adult male person', phonics: ['m', 'a', 'n'], example: 'The man is very tall.', category: 'people' },
+                    { word: 'van', definition: 'A large car for carrying things', phonics: ['v', 'a', 'n'], example: 'The van carries many boxes.', category: 'vehicles' },
+                    { word: 'bag', definition: 'Something to carry things in', phonics: ['b', 'a', 'g'], example: 'Put your lunch in the bag.', category: 'objects' },
+                    { word: 'tag', definition: 'A label on something', phonics: ['t', 'a', 'g'], example: 'The price tag says five dollars.', category: 'objects' },
+                    
+                    // Essential sight words
+                    { word: 'the', definition: 'A word used before things', phonics: ['th', 'e'], example: 'The book is on the table.', category: 'sight_words' },
+                    { word: 'and', definition: 'A word that joins things', phonics: ['a', 'n', 'd'], example: 'I like cats and dogs.', category: 'sight_words' },
+                    { word: 'you', definition: 'The person I am talking to', phonics: ['y', 'ou'], example: 'You are my best friend.', category: 'sight_words' },
+                    { word: 'are', definition: 'A word about being something', phonics: ['a', 're'], example: 'You are very smart.', category: 'sight_words' },
+                    { word: 'but', definition: 'A word that shows difference', phonics: ['b', 'u', 't'], example: 'I like cake but not spinach.', category: 'sight_words' },
+                    { word: 'not', definition: 'The opposite of yes', phonics: ['n', 'o', 't'], example: 'This is not my toy.', category: 'sight_words' },
+                    { word: 'all', definition: 'Every single one', phonics: ['a', 'll'], example: 'All children like to play.', category: 'sight_words' },
+                    { word: 'was', definition: 'Something that happened before', phonics: ['w', 'a', 's'], example: 'Yesterday was sunny.', category: 'sight_words' },
+                    { word: 'one', definition: 'The number before two', phonics: ['o', 'ne'], example: 'I have one apple.', category: 'numbers' },
+                    { word: 'two', definition: 'The number after one', phonics: ['t', 'w', 'o'], example: 'I have two hands.', category: 'numbers' },
+                    
+                    // More CVC and simple words
+                    { word: 'leg', definition: 'Part of your body for walking', phonics: ['l', 'e', 'g'], example: 'I hurt my leg playing soccer.', category: 'body' },
+                    { word: 'egg', definition: 'Something chickens lay', phonics: ['e', 'g', 'g'], example: 'I ate an egg for breakfast.', category: 'food' },
+                    { word: 'bed', definition: 'Where you sleep at night', phonics: ['b', 'e', 'd'], example: 'My bed is very comfortable.', category: 'furniture' },
+                    { word: 'pen', definition: 'Something you write with', phonics: ['p', 'e', 'n'], example: 'Use a pen to write your name.', category: 'school' },
+                    { word: 'ten', definition: 'The number after nine', phonics: ['t', 'e', 'n'], example: 'I have ten fingers.', category: 'numbers' },
+                    { word: 'net', definition: 'Something with holes to catch things', phonics: ['n', 'e', 't'], example: 'Catch fish with a fishing net.', category: 'objects' },
+                    { word: 'wet', definition: 'Covered with water', phonics: ['w', 'e', 't'], example: 'My shirt is wet from the rain.', category: 'describing' },
+                    { word: 'get', definition: 'To go and bring something back', phonics: ['g', 'e', 't'], example: 'Please get me a glass of water.', category: 'actions' },
+                    { word: 'let', definition: 'To allow someone to do something', phonics: ['l', 'e', 't'], example: 'Let me help you with that.', category: 'actions' },
+                    { word: 'hit', definition: 'To strike something', phonics: ['h', 'i', 't'], example: 'Hit the baseball with the bat.', category: 'actions' },
+                    { word: 'fit', definition: 'To be the right size', phonics: ['f', 'i', 't'], example: 'These shoes fit my feet perfectly.', category: 'describing' },
+                    { word: 'pit', definition: 'A deep hole in the ground', phonics: ['p', 'i', 't'], example: 'Be careful near the deep pit.', category: 'places' },
+                    { word: 'lot', definition: 'A large amount', phonics: ['l', 'o', 't'], example: 'I have a lot of toys.', category: 'describing' },
+                    { word: 'hot', definition: 'Very warm temperature', phonics: ['h', 'o', 't'], example: 'The soup is too hot to eat.', category: 'describing' },
+                    { word: 'got', definition: 'Received something', phonics: ['g', 'o', 't'], example: 'I got a new bike for my birthday.', category: 'actions' },
+                    { word: 'cut', definition: 'To slice with something sharp', phonics: ['c', 'u', 't'], example: 'Cut the paper with scissors.', category: 'actions' },
+                    { word: 'nut', definition: 'A hard seed you can eat', phonics: ['n', 'u', 't'], example: 'The squirrel found a nut.', category: 'food' },
+                    { word: 'hut', definition: 'A small simple house', phonics: ['h', 'u', 't'], example: 'The old man lives in a hut.', category: 'buildings' },
+                    { word: 'mud', definition: 'Wet earth that is sticky', phonics: ['m', 'u', 'd'], example: 'My boots are covered in mud.', category: 'nature' },
+                    { word: 'bud', definition: 'A flower before it opens', phonics: ['b', 'u', 'd'], example: 'The rose bud will bloom soon.', category: 'nature' },
+                    { word: 'cup', definition: 'Something you drink from', phonics: ['c', 'u', 'p'], example: 'Pour milk into the cup.', category: 'objects' },
+                    { word: 'pup', definition: 'A young dog', phonics: ['p', 'u', 'p'], example: 'The little pup is learning to walk.', category: 'animals' },
+                    { word: 'bus', definition: 'A large vehicle for many people', phonics: ['b', 'u', 's'], example: 'We ride the school bus every day.', category: 'vehicles' },
+                    { word: 'yes', definition: 'A word meaning I agree', phonics: ['y', 'e', 's'], example: 'Yes, I would like some cake.', category: 'responses' },
+                    { word: 'zip', definition: 'To close with a zipper', phonics: ['z', 'i', 'p'], example: 'Zip up your jacket to stay warm.', category: 'actions' },
+                    { word: 'dip', definition: 'To put something briefly in liquid', phonics: ['d', 'i', 'p'], example: 'Dip the cookie in milk.', category: 'actions' },
+                    { word: 'lip', definition: 'The edge of your mouth', phonics: ['l', 'i', 'p'], example: 'My lip is dry from the cold wind.', category: 'body' },
+                    { word: 'rip', definition: 'To tear something apart', phonics: ['r', 'i', 'p'], example: 'Please don\'t rip the paper.', category: 'actions' },
+                    { word: 'tip', definition: 'The pointed end of something', phonics: ['t', 'i', 'p'], example: 'The tip of the pencil is sharp.', category: 'parts' },
+                    
+                    // Colors and basic descriptive words
+                    { word: 'blue', definition: 'The color of the sky', phonics: ['bl', 'ue'], example: 'The ocean is blue.', category: 'colors' },
+                    { word: 'green', definition: 'The color of grass', phonics: ['gr', 'ee', 'n'], example: 'Leaves are green in spring.', category: 'colors' },
+                    { word: 'yellow', definition: 'The color of the sun', phonics: ['y', 'e', 'll', 'ow'], example: 'Bananas are yellow.', category: 'colors' },
+                    { word: 'black', definition: 'The darkest color', phonics: ['bl', 'a', 'ck'], example: 'The night sky is black.', category: 'colors' },
+                    { word: 'white', definition: 'The color of snow', phonics: ['wh', 'i', 't', 'e'], example: 'The clouds are white and fluffy.', category: 'colors' },
+                    { word: 'pink', definition: 'A light red color', phonics: ['p', 'i', 'n', 'k'], example: 'The flowers are pink.', category: 'colors' },
+                    { word: 'purple', definition: 'A color made from red and blue', phonics: ['p', 'ur', 'p', 'l', 'e'], example: 'Grapes are purple.', category: 'colors' },
+                    { word: 'orange', definition: 'A color between red and yellow', phonics: ['o', 'r', 'a', 'n', 'g', 'e'], example: 'Pumpkins are orange.', category: 'colors' },
+                    { word: 'brown', definition: 'The color of tree bark', phonics: ['br', 'ow', 'n'], example: 'Bears are brown.', category: 'colors' },
+                    { word: 'gray', definition: 'A color between black and white', phonics: ['gr', 'ay'], example: 'Storm clouds are gray.', category: 'colors' },
+                    
+                    // Family and people words
+                    { word: 'mom', definition: 'Another word for mother', phonics: ['m', 'o', 'm'], example: 'My mom makes great cookies.', category: 'family' },
+                    { word: 'dad', definition: 'Another word for father', phonics: ['d', 'a', 'd'], example: 'Dad reads me bedtime stories.', category: 'family' },
+                    { word: 'baby', definition: 'A very young child', phonics: ['b', 'a', 'b', 'y'], example: 'The baby is sleeping peacefully.', category: 'family' },
+                    { word: 'girl', definition: 'A young female person', phonics: ['g', 'ir', 'l'], example: 'The girl is playing with dolls.', category: 'people' },
+                    { word: 'boy', definition: 'A young male person', phonics: ['b', 'oy'], example: 'The boy loves to play soccer.', category: 'people' },
+                    { word: 'kid', definition: 'Another word for child', phonics: ['k', 'i', 'd'], example: 'Every kid loves ice cream.', category: 'people' },
+                    
+                    // Simple action words
+                    { word: 'go', definition: 'To move from here to there', phonics: ['g', 'o'], example: 'Let\'s go to the park.', category: 'actions' },
+                    { word: 'do', definition: 'To perform an action', phonics: ['d', 'o'], example: 'What do you want to do today?', category: 'actions' },
+                    { word: 'see', definition: 'To look at with your eyes', phonics: ['s', 'ee'], example: 'I can see a rainbow.', category: 'actions' },
+                    { word: 'eat', definition: 'To put food in your mouth', phonics: ['ea', 't'], example: 'Let\'s eat dinner together.', category: 'actions' },
+                    { word: 'play', definition: 'To have fun with games', phonics: ['pl', 'ay'], example: 'Children love to play outside.', category: 'actions' },
+                    { word: 'help', definition: 'To make things easier for someone', phonics: ['h', 'e', 'l', 'p'], example: 'Can you help me carry this?', category: 'actions' },
+                    { word: 'walk', definition: 'To move by putting one foot forward', phonics: ['w', 'a', 'l', 'k'], example: 'We walk to school every morning.', category: 'actions' },
+                    { word: 'talk', definition: 'To speak with someone', phonics: ['t', 'a', 'l', 'k'], example: 'Let\'s talk about our day.', category: 'actions' },
+                    { word: 'jump', definition: 'To leap up in the air', phonics: ['j', 'u', 'm', 'p'], example: 'I can jump very high.', category: 'actions' },
+                    { word: 'stop', definition: 'To not move anymore', phonics: ['st', 'o', 'p'], example: 'Stop at the red light.', category: 'actions' }
+                ],
+
+                // Continue with more vocabulary sets for different periods...
+                week5_12: [
+                    // Building on previous words with slightly more complex vocabulary
+                    { word: 'house', definition: 'A building where people live', phonics: ['h', 'ou', 's', 'e'], example: 'Our house has a big garden.', category: 'buildings' },
+                    { word: 'school', definition: 'A place where children learn', phonics: ['sch', 'oo', 'l'], example: 'I love going to school every day.', category: 'buildings' },
+                    { word: 'book', definition: 'Pages with words and pictures', phonics: ['b', 'oo', 'k'], example: 'I read a book before bedtime.', category: 'school' },
+                    { word: 'water', definition: 'Clear liquid we drink', phonics: ['w', 'a', 't', 'er'], example: 'Drink water to stay healthy.', category: 'drinks' },
+                    { word: 'food', definition: 'Things we eat to grow strong', phonics: ['f', 'oo', 'd'], example: 'Fruits and vegetables are healthy food.', category: 'food' },
+                    { word: 'tree', definition: 'A tall plant with leaves', phonics: ['tr', 'ee'], example: 'Birds build nests in the tree.', category: 'nature' },
+                    { word: 'car', definition: 'A vehicle with four wheels', phonics: ['c', 'ar'], example: 'We drive to grandma\'s house in our car.', category: 'vehicles' },
+                    { word: 'bike', definition: 'A vehicle with two wheels you pedal', phonics: ['b', 'i', 'k', 'e'], example: 'I ride my bike to the park.', category: 'vehicles' },
+                    { word: 'ball', definition: 'A round object you play with', phonics: ['b', 'a', 'll'], example: 'Let\'s play catch with the ball.', category: 'toys' },
+                    { word: 'toy', definition: 'Something fun to play with', phonics: ['t', 'oy'], example: 'My favorite toy is a teddy bear.', category: 'toys' },
+                    
+                    // More sight words and common words
+                    { word: 'have', definition: 'To own something', phonics: ['h', 'a', 'v', 'e'], example: 'I have a new bicycle.', category: 'sight_words' },
+                    { word: 'this', definition: 'The thing close to me', phonics: ['th', 'i', 's'], example: 'This is my favorite book.', category: 'sight_words' },
+                    { word: 'that', definition: 'The thing far from me', phonics: ['th', 'a', 't'], example: 'That bird is very colorful.', category: 'sight_words' },
+                    { word: 'with', definition: 'Together alongside someone', phonics: ['w', 'i', 'th'], example: 'I play with my friends.', category: 'sight_words' },
+                    { word: 'they', definition: 'Other people we talk about', phonics: ['th', 'ey'], example: 'They are playing in the yard.', category: 'sight_words' },
+                    { word: 'from', definition: 'Starting at a place', phonics: ['fr', 'o', 'm'], example: 'I come from a small town.', category: 'sight_words' },
+                    { word: 'here', definition: 'In this place', phonics: ['h', 'e', 're'], example: 'Come here and sit with me.', category: 'sight_words' },
+                    { word: 'there', definition: 'In that place', phonics: ['th', 'e', 're'], example: 'Put the book over there.', category: 'sight_words' },
+                    { word: 'where', definition: 'In what place', phonics: ['wh', 'e', 're'], example: 'Where did you put my shoes?', category: 'sight_words' },
+                    { word: 'when', definition: 'At what time', phonics: ['wh', 'e', 'n'], example: 'When will dinner be ready?', category: 'sight_words' },
+                    
+                    // Numbers and counting
+                    { word: 'three', definition: 'The number after two', phonics: ['th', 'r', 'ee'], example: 'I have three sisters.', category: 'numbers' },
+                    { word: 'four', definition: 'The number after three', phonics: ['f', 'our'], example: 'A dog has four legs.', category: 'numbers' },
+                    { word: 'five', definition: 'The number after four', phonics: ['f', 'i', 'v', 'e'], example: 'I have five fingers on each hand.', category: 'numbers' },
+                    { word: 'six', definition: 'The number after five', phonics: ['s', 'i', 'x'], example: 'There are six sides on a cube.', category: 'numbers' },
+                    { word: 'seven', definition: 'The number after six', phonics: ['s', 'e', 'v', 'e', 'n'], example: 'There are seven days in a week.', category: 'numbers' },
+                    { word: 'eight', definition: 'The number after seven', phonics: ['ei', 'gh', 't'], example: 'A spider has eight legs.', category: 'numbers' },
+                    { word: 'nine', definition: 'The number after eight', phonics: ['n', 'i', 'n', 'e'], example: 'I go to bed at nine o\'clock.', category: 'numbers' },
+                    
+                    // Body parts
+                    { word: 'hand', definition: 'The part at the end of your arm', phonics: ['h', 'a', 'n', 'd'], example: 'Wash your hands before eating.', category: 'body' },
+                    { word: 'foot', definition: 'The part at the end of your leg', phonics: ['f', 'oo', 't'], example: 'I hurt my foot while running.', category: 'body' },
+                    { word: 'head', definition: 'The top part of your body', phonics: ['h', 'ea', 'd'], example: 'Wear a helmet to protect your head.', category: 'body' },
+                    { word: 'eye', definition: 'The part you see with', phonics: ['ey', 'e'], example: 'Close your eyes and make a wish.', category: 'body' },
+                    { word: 'nose', definition: 'The part you smell with', phonics: ['n', 'o', 's', 'e'], example: 'The flower smells good to my nose.', category: 'body' },
+                    { word: 'ear', definition: 'The part you hear with', phonics: ['ear'], example: 'Listen with your ears.', category: 'body' },
+                    { word: 'mouth', definition: 'The part you eat and talk with', phonics: ['m', 'ou', 'th'], example: 'Open your mouth and say ahh.', category: 'body' },
+                    { word: 'arm', definition: 'The part between your shoulder and hand', phonics: ['ar', 'm'], example: 'Raise your arm up high.', category: 'body' },
+                    
+                    // Simple describing words
+                    { word: 'happy', definition: 'Feeling very good and joyful', phonics: ['h', 'a', 'pp', 'y'], example: 'I am happy when I play with friends.', category: 'feelings' },
+                    { word: 'sad', definition: 'Feeling unhappy', phonics: ['s', 'a', 'd'], example: 'I feel sad when my toy breaks.', category: 'feelings' },
+                    { word: 'mad', definition: 'Feeling angry', phonics: ['m', 'a', 'd'], example: 'Don\'t be mad, we can fix it.', category: 'feelings' },
+                    { word: 'glad', definition: 'Feeling happy and pleased', phonics: ['gl', 'a', 'd'], example: 'I am glad you came to visit.', category: 'feelings' },
+                    { word: 'good', definition: 'Nice or well done', phonics: ['g', 'oo', 'd'], example: 'You did a good job on your drawing.', category: 'describing' },
+                    { word: 'bad', definition: 'Not good or nice', phonics: ['b', 'a', 'd'], example: 'Lying is a bad thing to do.', category: 'describing' },
+                    { word: 'new', definition: 'Just made or bought', phonics: ['n', 'ew'], example: 'I got new shoes for school.', category: 'describing' },
+                    { word: 'old', definition: 'Been around for a long time', phonics: ['o', 'ld'], example: 'My grandpa is very old and wise.', category: 'describing' },
+                    { word: 'fast', definition: 'Moving very quickly', phonics: ['f', 'a', 's', 't'], example: 'The race car goes very fast.', category: 'describing' },
+                    { word: 'slow', definition: 'Moving not quickly', phonics: ['sl', 'ow'], example: 'The turtle moves very slow.', category: 'describing' },
+                    
+                    // More animals
+                    { word: 'fish', definition: 'An animal that lives in water', phonics: ['f', 'i', 'sh'], example: 'Colorful fish swim in the ocean.', category: 'animals' },
+                    { word: 'bird', definition: 'An animal that can fly', phonics: ['b', 'ir', 'd'], example: 'The bird builds a nest in the tree.', category: 'animals' },
+                    { word: 'pig', definition: 'A farm animal that oinks', phonics: ['p', 'i', 'g'], example: 'The pig rolls in the mud.', category: 'animals' },
+                    { word: 'cow', definition: 'A farm animal that gives milk', phonics: ['c', 'ow'], example: 'The cow eats grass in the field.', category: 'animals' },
+                    { word: 'duck', definition: 'A water bird that quacks', phonics: ['d', 'u', 'ck'], example: 'The duck swims in the pond.', category: 'animals' },
+                    { word: 'frog', definition: 'A green animal that hops and croaks', phonics: ['fr', 'o', 'g'], example: 'The frog jumps on the lily pad.', category: 'animals' },
+                    { word: 'bear', definition: 'A big furry animal', phonics: ['b', 'ear'], example: 'The bear sleeps in winter.', category: 'animals' },
+                    { word: 'lion', definition: 'A big cat that roars', phonics: ['l', 'i', 'o', 'n'], example: 'The lion is the king of animals.', category: 'animals' },
+                    
+                    // Simple foods
+                    { word: 'milk', definition: 'A white drink from cows', phonics: ['m', 'i', 'l', 'k'], example: 'I drink milk with my cookies.', category: 'drinks' },
+                    { word: 'cake', definition: 'A sweet dessert for celebrations', phonics: ['c', 'a', 'k', 'e'], example: 'We eat cake on birthdays.', category: 'food' },
+                    { word: 'pie', definition: 'A round dessert with filling', phonics: ['p', 'i', 'e'], example: 'Apple pie tastes delicious.', category: 'food' },
+                    { word: 'ice', definition: 'Frozen water', phonics: ['i', 'c', 'e'], example: 'Put ice in your drink to make it cold.', category: 'food' },
+                    { word: 'rice', definition: 'Small white grains you eat', phonics: ['r', 'i', 'c', 'e'], example: 'We eat rice with our dinner.', category: 'food' },
+                    { word: 'soup', definition: 'A liquid meal you eat with a spoon', phonics: ['s', 'ou', 'p'], example: 'Chicken soup tastes good when you\'re sick.', category: 'food' },
+                    { word: 'meat', definition: 'Food that comes from animals', phonics: ['m', 'ea', 't'], example: 'We cook meat for dinner.', category: 'food' },
+                    { word: 'fish', definition: 'An animal we can eat from water', phonics: ['f', 'i', 'sh'], example: 'Grilled fish is healthy food.', category: 'food' },
+                    
+                    // Weather and nature
+                    { word: 'rain', definition: 'Water that falls from clouds', phonics: ['r', 'ai', 'n'], example: 'Plants need rain to grow.', category: 'weather' },
+                    { word: 'snow', definition: 'White flakes that fall in winter', phonics: ['sn', 'ow'], example: 'We build snowmen when it snows.', category: 'weather' },
+                    { word: 'wind', definition: 'Moving air you can feel', phonics: ['w', 'i', 'n', 'd'], example: 'The wind blows the leaves off trees.', category: 'weather' },
+                    { word: 'cold', definition: 'Not warm, like ice', phonics: ['c', 'o', 'l', 'd'], example: 'Wear a coat when it\'s cold outside.', category: 'weather' },
+                    { word: 'warm', definition: 'Nice and cozy, not cold', phonics: ['w', 'ar', 'm'], example: 'The fireplace makes us warm.', category: 'weather' },
+                    { word: 'sky', definition: 'The space above us outside', phonics: ['sk', 'y'], example: 'The sky is blue on sunny days.', category: 'nature' },
+                    { word: 'moon', definition: 'The bright circle we see at night', phonics: ['m', 'oo', 'n'], example: 'The moon shines at night.', category: 'nature' },
+                    { word: 'star', definition: 'Tiny lights we see in the night sky', phonics: ['st', 'ar'], example: 'I wish upon a star.', category: 'nature' },
+                    
+                    // Time words
+                    { word: 'day', definition: 'When the sun is shining', phonics: ['d', 'ay'], example: 'We play outside during the day.', category: 'time' },
+                    { word: 'night', definition: 'When it\'s dark and we sleep', phonics: ['n', 'i', 'gh', 't'], example: 'I sleep all through the night.', category: 'time' },
+                    { word: 'today', definition: 'This day right now', phonics: ['t', 'o', 'd', 'ay'], example: 'Today is a beautiful day.', category: 'time' },
+                    { word: 'now', definition: 'At this moment', phonics: ['n', 'ow'], example: 'We need to leave right now.', category: 'time' },
+                    { word: 'soon', definition: 'In a little while', phonics: ['s', 'oo', 'n'], example: 'Dinner will be ready soon.', category: 'time' },
+                    { word: 'early', definition: 'Before the usual time', phonics: ['ear', 'l', 'y'], example: 'I woke up early this morning.', category: 'time' },
+                    { word: 'late', definition: 'After the usual time', phonics: ['l', 'a', 't', 'e'], example: 'Don\'t stay up too late tonight.', category: 'time' }
+                ],
+
+                // Additional vocabulary sets for the remaining days...
+                // This is a simplified version - in a real app, you'd have comprehensive sets for all 365 days
+                
+                advanced_words: [
+                    // More complex words for later in the year
+                    { word: 'beautiful', definition: 'Very pretty to look at', phonics: ['b', 'eau', 't', 'i', 'f', 'u', 'l'], example: 'The sunset is beautiful.', category: 'describing' },
+                    { word: 'important', definition: 'Something that matters a lot', phonics: ['i', 'm', 'p', 'or', 't', 'a', 'n', 't'], example: 'It\'s important to be kind.', category: 'describing' },
+                    { word: 'different', definition: 'Not the same as something else', phonics: ['d', 'i', 'ff', 'er', 'e', 'n', 't'], example: 'Every snowflake is different.', category: 'describing' },
+                    { word: 'together', definition: 'With each other', phonics: ['t', 'o', 'g', 'e', 'th', 'er'], example: 'Let\'s work together on this puzzle.', category: 'describing' },
+                    { word: 'family', definition: 'People who love and care for you', phonics: ['f', 'a', 'm', 'i', 'l', 'y'], example: 'I love spending time with my family.', category: 'family' },
+                    { word: 'friend', definition: 'Someone you like and enjoy being with', phonics: ['fr', 'i', 'e', 'n', 'd'], example: 'My best friend lives next door.', category: 'people' },
+                    { word: 'teacher', definition: 'A person who helps you learn', phonics: ['t', 'ea', 'ch', 'er'], example: 'My teacher is very nice and helpful.', category: 'people' },
+                    { word: 'student', definition: 'A person who is learning', phonics: ['st', 'u', 'd', 'e', 'n', 't'], example: 'Every student should try their best.', category: 'people' },
+                    { word: 'children', definition: 'More than one child', phonics: ['ch', 'i', 'l', 'd', 'r', 'e', 'n'], example: 'All children love to play games.', category: 'people' },
+                    { word: 'people', definition: 'Human beings', phonics: ['p', 'eo', 'p', 'l', 'e'], example: 'Many people came to the show.', category: 'people' }
+                ]
+            };
+
+            // Generate daily word list
+            const generateDailyWords = (day) => {
+                const wordsPerDay = 70;
+                let availableWords = [];
+                
+                // Progressive difficulty based on day
+                if (day <= 28) {
+                    availableWords = vocabularyDatabase.week1_4;
+                } else if (day <= 84) {
+                    availableWords = [...vocabularyDatabase.week1_4, ...vocabularyDatabase.week5_12];
+                } else {
+                    availableWords = [...vocabularyDatabase.week1_4, ...vocabularyDatabase.week5_12, ...vocabularyDatabase.advanced_words];
+                }
+
+                // Add seasonal/monthly themed words
+                const monthlyWords = getMonthlyWords(day);
+                availableWords = [...availableWords, ...monthlyWords];
+
+                // Shuffle and select 70 words
+                const shuffled = availableWords.sort(() => Math.random() - 0.5);
+                const selectedWords = shuffled.slice(0, Math.min(wordsPerDay, shuffled.length));
+
+                // Fill remaining slots if needed by cycling through available words
+                while (selectedWords.length < wordsPerDay) {
+                    const remaining = availableWords.filter(word => !selectedWords.find(w => w.word === word.word));
+                    if (remaining.length > 0) {
+                        selectedWords.push(remaining[0]);
+                    } else {
+                        break;
+                    }
+                }
+
+                return selectedWords.map((wordData, index) => ({
+                    ...wordData,
+                    level: getWordLevel(wordData.word),
+                    completed: false,
+                    id: index
+                }));
+            };
+
+            // Monthly themed words
+            const getMonthlyWords = (day) => {
+                const month = Math.ceil(day / 30.42);
+                const monthlyThemes = {
+                    1: [ // January - New Year
+                        { word: 'new', definition: 'Just begun or made', phonics: ['n', 'ew'], example: 'Happy New Year!', category: 'time' },
+                        { word: 'year', definition: 'Twelve months together', phonics: ['y', 'ear'], example: 'This year will be great!', category: 'time' },
+                        { word: 'winter', definition: 'The cold season with snow', phonics: ['w', 'i', 'n', 't', 'er'], example: 'I love playing in winter snow.', category: 'seasons' }
+                    ],
+                    2: [ // February - Valentine's Day
+                        { word: 'love', definition: 'To care very much about someone', phonics: ['l', 'o', 'v', 'e'], example: 'I love my family.', category: 'feelings' },
+                        { word: 'heart', definition: 'The shape that means love', phonics: ['h', 'ear', 't'], example: 'Draw a red heart.', category: 'shapes' },
+                        { word: 'friend', definition: 'Someone special you like', phonics: ['fr', 'i', 'e', 'n', 'd'], example: 'You are my best friend.', category: 'people' }
+                    ],
+                    // Continue for all 12 months...
+                };
+                
+                return monthlyThemes[month] || [];
+            };
+
+            const getWordLevel = (word) => {
+                if (word.length <= 3) return 1;
+                if (word.length <= 4) return 2;
+                if (word.length <= 5) return 3;
+                if (word.length <= 6) return 4;
+                if (word.length <= 7) return 5;
+                if (word.length <= 8) return 6;
+                return 7;
+            };
+
+            const [dailyWords, setDailyWords] = useState([]);
+
+            // Achievement system
+            const achievementTypes = [
+                { id: 'first_word', name: 'First Steps', description: 'Complete your first word!', icon: '🌟', threshold: 1 },
+                { id: 'ten_words', name: 'Word Explorer', description: 'Learn 10 words!', icon: '🚀', threshold: 10 },
+                { id: 'daily_complete', name: 'Daily Champion', description: 'Complete all 70 words in a day!', icon: '🎯', threshold: 70 },
+                { id: 'week_complete', name: 'Weekly Warrior', description: 'Complete 7 days in a row!', icon: '📅', threshold: 7 },
+                { id: 'month_complete', name: 'Monthly Master', description: 'Complete 30 days!', icon: '🏆', threshold: 30 },
+                { id: 'hundred_words', name: 'Century Scholar', description: 'Learn 100 words total!', icon: '💯', threshold: 100 },
+                { id: 'phonics_expert', name: 'Phonics Pro', description: 'Use phonics 50 times!', icon: '🎵', threshold: 50 },
+                { id: 'typing_master', name: 'Typing Champion', description: 'Type 100 words correctly!', icon: '⌨️', threshold: 100 },
+                { id: 'memory_genius', name: 'Memory Genius', description: 'Perfect score in memory game 10 times!', icon: '🧠', threshold: 10 },
+                { id: 'reading_legend', name: 'Reading Legend', description: 'Complete 100 days!', icon: '👑', threshold: 100 }
+            ];
+
+            // Initialize daily words on component mount and day change
+            useEffect(() => {
+                const newDailyWords = generateDailyWords(currentDay);
+                setDailyWords(newDailyWords);
+                setCurrentWordIndex(0);
+                setCompletedWords(0);
+                setDailyProgress(0);
+                generateMatchingGame(newDailyWords);
+            }, [currentDay]);
+
+            const currentWord = dailyWords[currentWordIndex];
+
+            // Text-to-speech functionality
+            const speakWord = useCallback((word, rate = speechRate) => {
+                if ('speechSynthesis' in window) {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(word);
+                    utterance.rate = rate;
+                    utterance.pitch = 1.1;
+                    utterance.volume = 0.9;
+                    
+                    const voices = speechSynthesis.getVoices();
+                    const preferredVoice = voices.find(voice => 
+                        voice.lang.includes('en') && (
+                            voice.name.includes('Google') || 
+                            voice.name.includes('Microsoft') ||
+                            voice.name.includes('Female') ||
+                            voice.name.includes('Woman')
+                        )
+                    );
+                    
+                    if (preferredVoice) {
+                        utterance.voice = preferredVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+            }, [speechRate]);
+
+            // Achievement checking
+            const checkAchievements = useCallback((type, value) => {
+                achievementTypes.forEach(achievement => {
+                    if (achievement.id === type && value >= achievement.threshold && !achievements.includes(achievement.id)) {
+                        setAchievements(prev => [...prev, achievement.id]);
+                        setShowAchievement(achievement);
+                        setTimeout(() => setShowAchievement(null), 4000);
+                        
+                        setShowConfetti(true);
+                        setTimeout(() => setShowConfetti(false), 3000);
+                    }
+                });
+            }, [achievements]);
+
+            // Word navigation
+            const handleNextWord = () => {
+                if (currentWordIndex < dailyWords.length - 1) {
+                    const updatedWords = [...dailyWords];
+                    updatedWords[currentWordIndex].completed = true;
+                    setDailyWords(updatedWords);
+                    
+                    const newCompleted = completedWords + 1;
+                    setCurrentWordIndex(currentWordIndex + 1);
+                    setCompletedWords(newCompleted);
+                    setTotalWordsLearned(prev => prev + 1);
+                    setDailyProgress((newCompleted / dailyWords.length) * 100);
+                    setDailyWordsCompleted(prev => new Set([...prev, currentWord.word]));
+                    
+                    // Check achievements
+                    checkAchievements('first_word', 1);
+                    checkAchievements('ten_words', newCompleted);
+                    checkAchievements('daily_complete', newCompleted);
+                    checkAchievements('hundred_words', totalWordsLearned + 1);
+                    
+                    // Level up every 10 words
+                    if (newCompleted % 10 === 0 && currentLevel < 7) {
+                        setCurrentLevel(currentLevel + 1);
+                        setShowCelebration(true);
+                        setTimeout(() => setShowCelebration(false), 2000);
+                    }
+
+                    // Auto-play next word if enabled
+                    if (autoPlay) {
+                        setTimeout(() => {
+                            speakWord(dailyWords[currentWordIndex + 1]?.word);
+                        }, 1000);
+                    }
+                } else {
+                    // Day completed
+                    checkAchievements('daily_complete', completedWords + 1);
+                }
+                
+                setIsPlaying(false);
+                speechSynthesis.cancel();
+            };
+
+            const handlePrevWord = () => {
+                if (currentWordIndex > 0) {
+                    setCurrentWordIndex(currentWordIndex - 1);
+                    setIsPlaying(false);
+                    speechSynthesis.cancel();
+                }
+            };
+
+            const handlePlayPause = () => {
+                if (currentWord) {
+                    setIsPlaying(!isPlaying);
+                    if (!isPlaying) {
+                        speakWord(currentWord.word);
+                    } else {
+                        speechSynthesis.cancel();
+                    }
+                }
+            };
+
+            // Matching game functionality
+            const generateMatchingGame = (words = dailyWords) => {
+                const gameWords = words.slice(0, 8).filter(w => w.word);
+                const pairs = [];
+                
+                gameWords.forEach((wordObj, index) => {
+                    pairs.push({ 
+                        id: index * 2, 
+                        content: wordObj.word, 
+                        type: 'word', 
+                        matched: false, 
+                        wordData: wordObj 
+                    });
+                    pairs.push({ 
+                        id: index * 2 + 1, 
+                        content: wordObj.word, 
+                        type: 'audio', 
+                        matched: false, 
+                        wordData: wordObj 
+                    });
+                });
+                
+                setMatchingPairs(pairs.sort(() => Math.random() - 0.5));
+                setMatchedPairs([]);
+                setSelectedCards([]);
+            };
+
+            const handleCardClick = (card) => {
+                if (selectedCards.length < 2 && !selectedCards.find(c => c.id === card.id) && !card.matched) {
+                    const newSelected = [...selectedCards, card];
+                    setSelectedCards(newSelected);
+                    
+                    if (card.type === 'audio') {
+                        speakWord(card.content);
+                    }
+                    
+                    if (newSelected.length === 2) {
+                        setTimeout(() => {
+                            if (newSelected[0].content === newSelected[1].content && newSelected[0].type !== newSelected[1].type) {
+                                const newMatched = [...matchedPairs, ...newSelected];
+                                setMatchedPairs(newMatched);
+                                setGameScore(gameScore + 10);
+                                
+                                const updatedPairs = matchingPairs.map(p => 
+                                    newSelected.find(s => s.id === p.id) ? { ...p, matched: true } : p
+                                );
+                                setMatchingPairs(updatedPairs);
+                                
+                                // Check for perfect game
+                                if (newMatched.length === matchingPairs.length) {
+                                    checkAchievements('memory_genius', 1);
+                                }
+                            }
+                            setSelectedCards([]);
+                        }, 1000);
+                    }
+                }
+            };
+
+            // Typing exercise functionality
+            const handleTypingSubmit = () => {
+                if (currentWord && typingInput.toLowerCase() === currentWord.word.toLowerCase()) {
+                    setGameScore(gameScore + 5);
+                    checkAchievements('typing_master', 1);
+                    handleNextWord();
+                    setTypingInput('');
+                    
+                    // Visual feedback
+                    const input = document.querySelector('input[type="text"]');
+                    if (input) {
+                        input.style.background = 'linear-gradient(45deg, #4ade80, #22c55e)';
+                        setTimeout(() => {
+                            input.style.background = '';
+                        }, 500);
+                    }
+                }
+            };
+
+            const handleTypingKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleTypingSubmit();
+                }
+            };
+
+            // Helper functions
+            const toggleFavorite = (word) => {
+                setFavoriteWords(prev => {
+                    const newFavorites = new Set(prev);
+                    if (newFavorites.has(word)) {
+                        newFavorites.delete(word);
+                    } else {
+                        newFavorites.add(word);
+                    }
+                    return newFavorites;
+                });
+            };
+
+            const getLevelColor = (level) => {
+                const colors = {
+                    1: 'bg-green-500',
+                    2: 'bg-blue-500',
+                    3: 'bg-purple-500',
+                    4: 'bg-orange-500',
+                    5: 'bg-red-500',
+                    6: 'bg-pink-500',
+                    7: 'bg-indigo-500'
+                };
+                return colors[level] || 'bg-gray-500';
+            };
+
+            const getDifficultyLabel = (level) => {
+                const labels = {
+                    1: 'Beginner',
+                    2: 'Learning',
+                    3: 'Growing',
+                    4: 'Good',
+                    5: 'Great',
+                    6: 'Excellent',
+                    7: 'Expert'
+                };
+                return labels[level] || 'Unknown';
+            };
+
+            const renderPhonics = (phonics) => {
+                if (!phonics) return null;
+                return (
+                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                        {phonics.map((sound, index) => (
+                            <button
+                                key={index}
+                                onClick={() => {
+                                    speakWord(sound, 0.5);
+                                    checkAchievements('phonics_expert', 1);
+                                }}
+                                className="phonics-bubble w-12 h-12 text-lg cursor-pointer hover:scale-110 transition-transform"
+                                style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                                {sound}
+                            </button>
+                        ))}
+                    </div>
+                );
+            };
+
+            const createConfetti = () => {
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7'];
+                const confetti = [];
+                
+                for (let i = 0; i < 50; i++) {
+                    confetti.push(
+                        <div
+                            key={i}
+                            className="confetti"
+                            style={{
+                                left: Math.random() * window.innerWidth + 'px',
+                                backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+                                animationDelay: Math.random() * 3 + 's',
+                                animationDuration: (Math.random() * 3 + 2) + 's'
+                            }}
+                        />
+                    );
+                }
+                return confetti;
+            };
+
+            // Render functions for different tabs
+            const renderReadingTab = () => (
+                <div className="bg-white rounded-xl shadow-lg p-8 animate-fade-in">
+                    {/* Control Panel */}
+                    <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => setAutoPlay(!autoPlay)}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${autoPlay ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            >
+                                {React.createElement(autoPlay ? Pause : Play, { className: "w-4 h-4 mr-1" })}
+                                Auto Play
+                            </button>
+                            <button
+                                onClick={() => setShowDefinition(!showDefinition)}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${showDefinition ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            >
+                                {React.createElement(Lightbulb, { className: "w-4 h-4 mr-1" })}
+                                Meaning
+                            </button>
+                            <button
+                                onClick={() => setShowPhonics(!showPhonics)}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${showPhonics ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            >
+                                {React.createElement(Volume2, { className: "w-4 h-4 mr-1" })}
+                                Sounds
+                            </button>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                            <label className="text-sm text-gray-600">Speed:</label>
+                            <input
+                                type="range"
+                                min="0.5"
+                                max="1.5"
+                                step="0.1"
+                                value={speechRate}
+                                onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+                                className="w-20"
+                            />
+                            <span className="text-sm text-gray-600">{speechRate}x</span>
+                        </div>
+                    </div>
+
+                    {currentWord ? (
+                        <div className="text-center">
+                            <div className="mb-6">
+                                <div className="text-sm text-gray-500 mb-2 flex items-center justify-center space-x-2">
+                                    <span>Day {currentDay}</span>
+                                    <span>•</span>
+                                    <span>Word {currentWordIndex + 1} of {dailyWords.length}</span>
+                                    <span>•</span>
+                                    <span className="word-highlight">{currentWord.category}</span>
+                                </div>
+                                
+                                {/* Main word display */}
+                                <div className="relative">
+                                    <div className="text-9xl font-bold text-gray-800 mb-4 tracking-wide animate-scale-up" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                                        {currentWord.word}
+                                    </div>
+                                    <button
+                                        onClick={() => toggleFavorite(currentWord.word)}
+                                        className="absolute top-0 right-0 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                    >
+                                        {React.createElement(Heart, { 
+                                            className: `w-8 h-8 ${favoriteWords.has(currentWord.word) ? 'text-red-500 fill-current' : 'text-gray-400'}` 
+                                        })}
+                                    </button>
+                                </div>
+                                
+                                <div className="flex items-center justify-center space-x-4 mb-6">
+                                    <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold text-white ${getLevelColor(currentWord.level)}`}>
+                                        {currentWord.word.length} letters • Level {currentWord.level}
+                                    </div>
+                                </div>
+
+                                {/* Definition display */}
+                                {showDefinition && currentWord.definition && (
+                                    <div className="bg-blue-50 rounded-lg p-6 mb-6 animate-slide-in">
+                                        <h4 className="font-semibold text-blue-800 mb-2 text-lg flex items-center justify-center">
+                                            {React.createElement(Lightbulb, { className: "w-5 h-5 mr-2" })}
+                                            What does it mean?
+                                        </h4>
+                                        <p className="text-blue-700 text-lg">{currentWord.definition}</p>
+                                        {currentWord.example && (
+                                            <p className="text-blue-600 text-base mt-3 italic">
+                                                <strong>Example:</strong> "{currentWord.example}"
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Phonics display */}
+                                {showPhonics && currentWord.phonics && (
+                                    <div className="bg-purple-50 rounded-lg p-6 mb-6 animate-slide-in">
+                                        <h4 className="font-semibold text-purple-800 mb-3 text-lg flex items-center justify-center">
+                                            {React.createElement(Volume2, { className: "w-5 h-5 mr-2" })}
+                                            Break it into sounds:
+                                        </h4>
+                                        {renderPhonics(currentWord.phonics)}
+                                        <p className="text-purple-600 text-sm mt-3">Click each sound to hear it!</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Navigation buttons */}
+                            <div className="flex justify-center space-x-4 mb-8">
+                                <button
+                                    onClick={handlePrevWord}
+                                    disabled={currentWordIndex === 0}
+                                    className="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors flex items-center"
+                                >
+                                    ← Previous
+                                </button>
+                                
+                                <button
+                                    onClick={handlePlayPause}
+                                    className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center text-lg animate-bounce"
+                                >
+                                    {React.createElement(isPlaying ? Pause : Play, { className: "w-6 h-6 mr-2" })}
+                                    {isPlaying ? 'Stop' : 'Listen'}
+                                </button>
+                                
+                                <button
+                                    onClick={handleNextWord}
+                                    disabled={currentWordIndex === dailyWords.length - 1}
+                                    className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 transition-colors flex items-center"
+                                >
+                                    Next →
+                                </button>
+                            </div>
+
+                            {/* Learning tips */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-600">
+                                <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg">
+                                    {React.createElement(Ear, { className: "w-6 h-6 mr-2 text-blue-500" })}
+                                    <span>Listen carefully</span>
+                                </div>
+                                <div className="flex items-center justify-center p-4 bg-green-50 rounded-lg">
+                                    {React.createElement(Eye, { className: "w-6 h-6 mr-2 text-green-500" })}
+                                    <span>Look at the letters</span>
+                                </div>
+                                <div className="flex items-center justify-center p-4 bg-purple-50 rounded-lg">
+                                    {React.createElement(Brain, { className: "w-6 h-6 mr-2 text-purple-500" })}
+                                    <span>Remember the word</span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center animate-fade-in">
+                            <div className="text-8xl mb-6 animate-bounce">🎉</div>
+                            <h2 className="text-4xl font-bold text-gray-800 mb-4">Fantastic Job!</h2>
+                            <p className="text-xl text-gray-600 mb-6">You completed all {dailyWords.length} words for Day {currentDay}!</p>
+                            
+                            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-6 mb-8 max-w-md mx-auto">
+                                <h3 className="text-2xl font-bold mb-4">Daily Summary</h3>
+                                <div className="grid grid-cols-2 gap-4 text-lg">
+                                    <div>Words learned: <strong>{dailyWordsCompleted.size}</strong></div>
+                                    <div>Score earned: <strong>{gameScore}</strong></div>
+                                    <div>Level reached: <strong>{currentLevel}</strong></div>
+                                    <div>Streak: <strong>{streak} days</strong></div>
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={() => {
+                                    setCurrentDay(currentDay + 1);
+                                    checkAchievements('week_complete', currentDay + 1);
+                                    checkAchievements('month_complete', currentDay + 1);
+                                    checkAchievements('reading_legend', currentDay + 1);
+                                }}
+                                disabled={currentDay >= 365}
+                                className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                            >
+                                {currentDay < 365 ? `Start Day ${currentDay + 1}` : 'Congratulations! You completed the year!'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderMatchingGame = () => (
+                <div className="bg-white rounded-xl shadow-lg p-8 animate-fade-in">
+                    <div className="text-center mb-6">
+                        <h3 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+                            {React.createElement(Target, { className: "w-8 h-8 mr-3" })}
+                            Memory Matching Game
+                        </h3>
+                        <p className="text-gray-600 text-lg">Match the word with its sound!</p>
+                        <div className="text-xl font-semibold text-blue-600 mt-3 flex items-center justify-center">
+                            {React.createElement(Star, { className: "w-6 h-6 mr-2" })}
+                            Score: {gameScore}
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
+                        {matchingPairs.map((card) => (
+                            <div
+                                key={card.id}
+                                onClick={() => handleCardClick(card)}
+                                className={`word-card h-28 rounded-lg border-3 cursor-pointer transition-all duration-200 flex items-center justify-center text-center p-3 ${
+                                    card.matched 
+                                        ? 'bg-green-100 border-green-500 shadow-lg' 
+                                        : selectedCards.find(c => c.id === card.id)
+                                        ? 'bg-blue-100 border-blue-500 animate-wiggle'
+                                        : 'bg-gray-50 border-gray-300 hover:bg-gray-100 hover:shadow-md'
+                                }`}
+                            >
+                                {card.type === 'word' ? (
+                                    <span className="font-bold text-xl" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                                        {card.content}
+                                    </span>
+                                ) : (
+                                    <div className="text-center">
+                                        {React.createElement(Play, { className: "w-10 h-10 mx-auto mb-2 text-blue-500" })}
+                                        <span className="text-sm text-gray-600 font-semibold">🔊 Listen</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="text-center">
+                        <button
+                            onClick={() => generateMatchingGame()}
+                            className="px-8 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transition-colors flex items-center mx-auto text-lg"
+                        >
+                            {React.createElement(Shuffle, { className: "w-6 h-6 mr-2" })}
+                            New Game
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const renderTypingExercise = () => (
+                <div className="bg-white rounded-xl shadow-lg p-8 animate-fade-in">
+                    <div className="text-center mb-8">
+                        <h3 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+                            {React.createElement(Keyboard, { className: "w-8 h-8 mr-3" })}
+                            Spelling Practice
+                        </h3>
+                        <p className="text-gray-600 text-lg">Listen and type the word you hear!</p>
+                        <div className="text-xl font-semibold text-blue-600 mt-3 flex items-center justify-center">
+                            {React.createElement(Zap, { className: "w-6 h-6 mr-2" })}
+                            Score: {gameScore}
+                        </div>
+                    </div>
+                    
+                    {currentWord ? (
+                        <div className="max-w-lg mx-auto">
+                            <div className="text-center mb-8">
+                                <button
+                                    onClick={() => speakWord(currentWord.word)}
+                                    className="px-10 py-5 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center mx-auto text-xl animate-bounce"
+                                >
+                                    {React.createElement(Play, { className: "w-8 h-8 mr-3" })}
+                                    🔊 Play Word
+                                </button>
+                            </div>
+                            
+                            <div className="mb-8">
+                                <input
+                                    type="text"
+                                    value={typingInput}
+                                    onChange={(e) => setTypingInput(e.target.value)}
+                                    onKeyPress={handleTypingKeyPress}
+                                    placeholder="Type the word you heard..."
+                                    className="w-full px-6 py-4 border-3 border-gray-300 rounded-lg text-2xl text-center font-semibold focus:border-blue-500 focus:outline-none transition-all"
+                                    style={{ fontFamily: 'Comic Sans MS, cursive' }}
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <div className="flex justify-center space-x-4 mb-8">
+                                <button
+                                    onClick={handleTypingSubmit}
+                                    className="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center text-lg"
+                                >
+                                    {React.createElement(Check, { className: "w-6 h-6 mr-2" })}
+                                    Submit
+                                </button>
+                                <button
+                                    onClick={() => setTypingInput('')}
+                                    className="px-8 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors flex items-center text-lg"
+                                >
+                                    {React.createElement(X, { className: "w-6 h-6 mr-2" })}
+                                    Clear
+                                </button>
+                            </div>
+                            
+                            <div className="text-center">
+                                <div className="bg-yellow-50 rounded-lg p-4 mb-4">
+                                    <div className="text-gray-600 mb-2">
+                                        💡 <strong>Hint:</strong> This word has {currentWord.word.length} letters
+                                    </div>
+                                    <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold text-white ${getLevelColor(currentWord.level)}`}>
+                                        Level {currentWord.level} • {getDifficultyLabel(currentWord.level)}
+                                    </div>
+                                </div>
+                                
+                                {currentWord.definition && (
+                                    <div className="bg-blue-50 rounded-lg p-4">
+                                        <p className="text-blue-700 text-lg">
+                                            <strong>Meaning:</strong> {currentWord.definition}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center">
+                            <p className="text-gray-600 text-lg">Complete some words in the Reading tab first!</p>
+                        </div>
+                    )}
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 p-4">
+                    {/* Confetti Effect */}
+                    {showConfetti && createConfetti()}
+                    
+                    {/* Achievement Popup */}
+                    {showAchievement && (
+                        <div className="fixed top-4 right-4 z-50 achievement-popup">
+                            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-6 shadow-xl">
+                                <div className="flex items-center">
+                                    <span className="text-3xl mr-4">{showAchievement.icon}</span>
+                                    <div>
+                                        <h3 className="font-bold text-lg">{showAchievement.name}</h3>
+                                        <p className="text-sm">{showAchievement.description}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="flex items-center justify-center mb-4">
+                                {React.createElement(BookOpen, { className: "w-16 h-16 text-blue-600 mr-4 animate-bounce" })}
+                                <h1 className="text-5xl font-bold text-gray-800 animate-rainbow" style={{ fontFamily: 'Comic Sans MS, cursive' }}>
+                                    Grade 1 Reading Adventure
+                                </h1>
+                            </div>
+                            <p className="text-xl text-gray-600">Learn 70 new words every day for 365 days!</p>
+                            <p className="text-lg text-blue-600 font-semibold mt-2">
+                                📚 Total Goal: 25,550 words in one year! 📚
+                            </p>
+                        </div>
+
+                        {/* Day Selector */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center">
+                                    {React.createElement(Calendar, { className: "w-8 h-8 text-blue-500 mr-3" })}
+                                    <span className="text-2xl font-semibold text-gray-700">Day {currentDay} of 365</span>
+                                    {streak > 0 && (
+                                        <span className="ml-4 bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm flex items-center font-semibold">
+                                            🔥 {streak} day streak
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => setCurrentDay(Math.max(1, currentDay - 1))}
+                                        disabled={currentDay === 1}
+                                        className="px-6 py-2 bg-gray-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+                                    >
+                                        ← Previous Day
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentDay(Math.min(365, currentDay + 1))}
+                                        disabled={currentDay === 365}
+                                        className="px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                                    >
+                                        Next Day →
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div className="w-full bg-gray-200 rounded-full h-4">
+                                <div 
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-300"
+                                    style={{ width: `${(currentDay / 365) * 100}%` }}
+                                ></div>
+                            </div>
+                            <div className="text-center mt-2 text-gray-600">
+                                Year Progress: {Math.round((currentDay / 365) * 100)}%
+                            </div>
+                        </div>
+
+                        {/* Progress Dashboard */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center">
+                                    {React.createElement(Star, { className: "w-8 h-8 text-yellow-500 mr-3" })}
+                                    <span className="text-2xl font-semibold text-gray-700">
+                                        Today's Progress: {Math.round(dailyProgress)}%
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-sm text-gray-500">Words Completed Today</div>
+                                    <div className="text-3xl font-bold text-blue-600">{completedWords}/{dailyWords.length}</div>
+                                </div>
+                            </div>
+                            
+                            <div className="w-full bg-gray-200 rounded-full h-6 mb-6">
+                                <div 
+                                    className="bg-gradient-to-r from-green-400 to-blue-500 h-6 rounded-full transition-all duration-300"
+                                    style={{ width: `${dailyProgress}%` }}
+                                ></div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold text-white ${getLevelColor(currentLevel)} mb-2`}>
+                                        Level {currentLevel}
+                                    </div>
+                                    <div className="text-xs text-gray-600">{getDifficultyLabel(currentLevel)} Reader</div>
+                                </div>
+                                <div className="text-center p-4 bg-green-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-green-600">{totalWordsLearned}</div>
+                                    <div className="text-xs text-gray-600">Total Words Learned</div>
+                                </div>
+                                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-purple-600">{achievements.length}</div>
+                                    <div className="text-xs text-gray-600">Achievements Unlocked</div>
+                                </div>
+                                <div className="text-center p-4 bg-red-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-red-600">{favoriteWords.size}</div>
+                                    <div className="text-xs text-gray-600">Favorite Words</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Activity Tabs */}
+                        <div className="bg-white rounded-xl shadow-lg mb-8">
+                            <div className="flex border-b">
+                                <button
+                                    onClick={() => setActiveTab('reading')}
+                                    className={`flex-1 py-6 px-8 font-semibold transition-colors flex items-center justify-center text-lg ${
+                                        activeTab === 'reading' 
+                                            ? 'bg-blue-500 text-white' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {React.createElement(BookOpen, { className: "w-6 h-6 mr-3" })}
+                                    Reading Practice
+                                    <span className="ml-3 bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full">
+                                        {completedWords}/{dailyWords.length}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('matching')}
+                                    className={`flex-1 py-6 px-8 font-semibold transition-colors flex items-center justify-center text-lg ${
+                                        activeTab === 'matching' 
+                                            ? 'bg-purple-500 text-white' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {React.createElement(Target, { className: "w-6 h-6 mr-3" })}
+                                    Memory Game
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('typing')}
+                                    className={`flex-1 py-6 px-8 font-semibold transition-colors flex items-center justify-center text-lg ${
+                                        activeTab === 'typing' 
+                                            ? 'bg-green-500 text-white' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {React.createElement(Keyboard, { className: "w-6 h-6 mr-3" })}
+                                    Spelling Practice
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Active Tab Content */}
+                        {activeTab === 'reading' && renderReadingTab()}
+                        {activeTab === 'matching' && renderMatchingGame()}
+                        {activeTab === 'typing' && renderTypingExercise()}
+
+                        {/* Level Up Celebration Modal */}
+                        {showCelebration && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-xl p-10 text-center animate-bounce">
+                                    <div className="text-8xl mb-6 animate-spin">🌟</div>
+                                    <h2 className="text-4xl font-bold text-gray-800 mb-4">Level Up!</h2>
+                                    <p className="text-xl text-gray-600 mb-2">You've reached Level {currentLevel}!</p>
+                                    <p className="text-lg text-gray-500 mb-6">{getDifficultyLabel(currentLevel)} Reader</p>
+                                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-4">
+                                        <p className="font-semibold text-lg">🎉 Amazing Progress! 🎉</p>
+                                        <p>You've learned {totalWordsLearned} words so far!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<Grade1ReadingApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
